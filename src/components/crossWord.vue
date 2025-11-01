@@ -467,7 +467,7 @@ td.blocked {
 
 /* active / highlight / correct / wrong styles */
 td.active {
-  border-color: #1e88e5;
+  border-color: #19d2c8eb;
   box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.08) inset;
 }
 td.highlight {
