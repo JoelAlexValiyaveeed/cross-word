@@ -1,268 +1,522 @@
 <template>
-  <div class="crossword-wrap">
-    <div class="controls">
-      <div class="status">Unsolved: {{unsolvedCount}}</div>
-      <div class="buttons">
-        <button @click="checkAll">Check</button>
-        <button @click="revealAll">Reveal</button>
-        <button @click="revealHint">Reveal Letter</button>
-        <button @click="resetPuzzle">Reset</button>
-      </div>
+  <div class="crossword-wrapper">
+    <div class="crossword-container" ref="containerRef">
+      <!-- Background image (fills container) -->
+      <img src="/cross-word.jpg" class="background-image" alt="crossword bg" />
+
+      <!-- Table overlay (fills container exactly) -->
+      <table class="crossword-table" @mousedown.prevent>
+        <tbody>
+          <tr v-for="(row, r) in grid" :key="r">
+            <td
+              v-for="(cell, c) in row"
+              :key="c"
+              :class="cellClass(cell)"
+              @click="onCellClick(cell)"
+            >
+              <template v-if="cell && !cell.blocked">
+                <span v-if="cell.number" class="cell-number">{{
+                  cell.number
+                }}</span>
+                <input
+                  class="cross-input"
+                  maxlength="1"
+                  v-model="cell.value"
+                  :data-r="cell.r"
+                  :data-c="cell.c"
+                  @focus="onFocus(cell)"
+                  @input="onInput(cell)"
+                  @keydown="onKeyDown($event, cell)"
+                  autocomplete="off"
+                />
+              </template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
-    <div class="board" @keydown="onKeydown">
-      <div
-        v-for="(row, r) in grid"
-        :key="r"
-        class="row"
-      >
-        <div
-          v-for="(cell, c) in row"
-          :key="c"
-          :class="['cell', {block: cell.block, focused: focused.r===r && focused.c===c, wrong: cell.state==='wrong'}]"
-          @click="focusCell(r,c)"
-        >
-          <template v-if="!cell.block">
-            <input
-              ref="inputs"
-              :data-r="r"
-              :data-c="c"
-              maxlength="1"
-              v-model="cell.char"
-              @input="onInput(r,c,$event)"
-              @focus="setFocused(r,c)"
-              @keydown.stop
-            />
-            <div class="num" v-if="cell.clueNum">{{cell.clueNum}}</div>
-          </template>
-        </div>
-      </div>
-    </div>
+    <!--    <aside class="clue-panel">
+      <h2>Clues</h2>
 
-    <div class="clues">
-      <div class="clue-col">
+      <div class="clue-section">
         <h3>Across</h3>
         <ul>
-          <li v-for="cl in across" :key="cl.num" @click="selectClue(cl, 'across')">
-            <strong>{{cl.num}}.</strong> {{cl.text}}
+          <li
+            v-for="clue in clues.across"
+            :key="clue.number"
+            :class="{ selected: selectedClue === clue }"
+            @click="selectClue(clue, 'across')"
+          >
+            {{ clue.number }}. {{ clue.text }}
           </li>
         </ul>
       </div>
 
-      <div class="clue-col">
+      <div class="clue-section">
         <h3>Down</h3>
         <ul>
-          <li v-for="cl in down" :key="cl.num" @click="selectClue(cl, 'down')">
-            <strong>{{cl.num}}.</strong> {{cl.text}}
+          <li
+            v-for="clue in clues.down"
+            :key="clue.number"
+            :class="{ selected: selectedClue === clue }"
+            @click="selectClue(clue, 'down')"
+          >
+            {{ clue.number }}. {{ clue.text }}
           </li>
         </ul>
       </div>
-    </div>
 
+      <div class="buttons">
+        <button @click="checkAnswers">Check</button>
+        <button @click="resetPuzzle">Reset</button>
+      </div>
+    </aside> -->
   </div>
 </template>
 
-<script setup>
-import { reactive, ref, computed, onMounted, nextTick } from 'vue'
+<script setup lang="ts">
+import { ref, nextTick } from "vue";
 
-// ===== SAMPLE PUZZLE DEFINITION =====
-// width, height, and list of across/down entries with coordinates
-const samplePuzzle = {
-  width: 10,
-  height: 10,
-  blocks: [
-    /* array of [r,c] for black squares (0-indexed) */
-    [0,3],[0,7],[1,7],[2,7],[3,1],[3,5],[4,5],[5,2],[5,6],[6,6],[7,0],[7,4],[8,4],[9,2]
-  ],
-  // answers used for checking (placed left-to-right / top-to-bottom)
-  entries: [
-    {num:1, dir:'across', r:0, c:0, len:3, answer:'SEA', text:'Large body of salt water'},
-    {num:4, dir:'across', r:0, c:4, len:3, answer:'PORT', text:'Harbor (but 4-letter to demo)'.slice(0,3)},
-    {num:6, dir:'across', r:1, c:0, len:7, answer:'SHIPYRD'.slice(0,7), text:'Place where ships are built'},
-    {num:9, dir:'down', r:0, c:0, len:4, answer:'SALT', text:'Opposite of fresh'},
-    {num:10, dir:'across', r:2, c:0, len:5, answer:'DOCKS', text:'Where ships tie up'},
-    // ... add more entries or generate automatically
-  ]
-}
+type Cell = {
+  r: number;
+  c: number;
+  correct: string;
+  value: string;
+  blocked: boolean;
+  number?: number;
+  acrossId?: number;
+  downId?: number;
+};
 
-// ===== BUILD GRID =====
-function buildGrid(puzzle){
-  const grid = Array.from({length: puzzle.height}, (_,r)=>
-    Array.from({length: puzzle.width}, (_,c)=>({
-      block:false,
-      char:'',
-      solution:'',
-      clueNum:null,
-      state:'', // '', 'correct', 'wrong'
+const ROWS = 12;
+const COLS = 15;
+
+/* initialize grid */
+const grid = ref<Cell[][]>(
+  Array.from({ length: ROWS }, (_, r) =>
+    Array.from({ length: COLS }, (_, c) => ({
+      r,
+      c,
+      correct: "",
+      value: "",
+      blocked: true,
     }))
   )
-  puzzle.blocks.forEach(([r,c])=>{
-    if (r>=0 && r<puzzle.height && c>=0 && c<puzzle.width) grid[r][c].block = true
-  })
+);
 
-  // Place entries (solution letters)
-  puzzle.entries.forEach(e=>{
-    let r=e.r, c=e.c
-    for(let i=0;i<e.len;i++){
-      if(!grid[r]||!grid[r][c]) break
-      grid[r][c].solution = e.answer[i] ? e.answer[i].toUpperCase() : ''
-      // mark clue number for the starting cell
-      if(i===0) grid[r][c].clueNum = e.num
-      if(e.dir==='across') c++
-      else r++
+/* helper to place word with row/col coordinates */
+function placeWord(
+  word: string,
+  row: number,
+  col: number,
+  dir: "across" | "down",
+  number?: number,
+  id?: number
+) {
+  // ensure indices within bounds
+  const len = word.length;
+  for (let i = 0; i < len; i++) {
+    const r = dir === "across" ? row : row + i;
+    const c = dir === "across" ? col + i : col;
+    if (r < 0 || r >= ROWS || c < 0 || c >= COLS) {
+      console.warn("placeWord out of bounds:", word, row, col, dir);
+      return;
     }
-  })
-
-  return grid
+    const cell = grid.value[r][c];
+    cell.blocked = false;
+    cell.correct = word[i].toUpperCase();
+    cell.value = "";
+    if (i === 0 && number) cell.number = number;
+    if (dir === "across") cell.acrossId = id;
+    if (dir === "down") cell.downId = id;
+  }
 }
 
-const puzzle = samplePuzzle
-const grid = reactive(buildGrid(puzzle))
+/* --- place our puzzle words (adjust positions so they fit) --- */
+/* chosen positions keep everything inside 12x12 */
+placeWord("PLACEBO", 1, 4, "across", 1, 1); // 1 Across
+placeWord("CONTROLLED", 1, 7, "down", 2, 2); // 2 Down
+placeWord("RANDOMISATION", 6, 3, "across", 5, 5); // 5 Across (moved a bit for better fit)
+placeWord("EVIDENCE", 9, 0, "across", 7, 7); // 7 Across
+placeWord("BLINDING", 3, 5, "down", 3, 3); // 3 Down (starts under C column)
+placeWord("RCT", 4, 11, "down", 4, 4); // 4 Down
+placeWord("BIAS", 8, 2, "down", 6, 6); // 6 Down
 
-// collect clues across/down from puzzle.entries
-const across = computed(()=>puzzle.entries.filter(e=>e.dir==='across'))
-const down = computed(()=>puzzle.entries.filter(e=>e.dir==='down'))
+/* Clues */
+const clues = ref({
+  across: [
+    {
+      number: 1,
+      text:
+        "A look-alike pill with no active ingredient, used for comparison in trials.",
+    },
+    {
+      number: 5,
+      text:
+        "The ____ process determines who receives the new medication and who receives a placebo, much like flipping a coin.",
+    },
+    {
+      number: 7,
+      text:
+        "Reliable information from research that helps doctors make informed decisions.",
+    },
+  ],
+  down: [
+    {
+      number: 2,
+      text:
+        "When a study compares one group with another, it is called a ______ study.",
+    },
+    {
+      number: 3,
+      text:
+        "A method used in trials to keep participants or researchers unaware of who gets the real treatment.",
+    },
+    {
+      number: 4,
+      text:
+        "The gold standard study design used to test if treatments truly work.",
+    },
+    {
+      number: 6,
+      text:
+        "What is it called when people’s thoughts or expectations unintentionally affect the outcome of a study.",
+    },
+  ],
+});
 
-const focused = reactive({r:0,c:0})
-const inputs = ref([])
+/* state */
+const activeCell = ref<Cell | null>(null);
+const currentDirection = ref<"across" | "down">("across");
+const selectedClue = ref<any>(null);
+const showResults = ref(false);
+const containerRef = ref<HTMLElement | null>(null);
 
-onMounted(()=>{
-  // focus first non-block cell
-  for(let r=0;r<grid.length;r++){
-    for(let c=0;c<grid[r].length;c++){
-      if(!grid[r][c].block){
-        focused.r=r; focused.c=c; return
-      }
+/* helpers to flatten / find */
+function flatGrid() {
+  return grid.value.flat();
+}
+function cellAt(r: number, c: number) {
+  if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return null;
+  return grid.value[r][c];
+}
+
+/* find list of cells for a word (ordered) */
+function cellsFor(cell: Cell | null, dir: "across" | "down") {
+  if (!cell) return [];
+  const id = dir === "across" ? cell.acrossId : cell.downId;
+  if (id == null) return [];
+  const list = flatGrid().filter((x) =>
+    dir === "across" ? x.acrossId === id : x.downId === id
+  );
+  return dir === "across"
+    ? list.sort((a, b) => a.c - b.c)
+    : list.sort((a, b) => a.r - b.r);
+}
+
+/* UI helpers */
+function cellClass(cell: Cell | null) {
+  if (!cell) return "";
+  return {
+    blocked: cell.blocked,
+    active: activeCell.value === cell,
+    highlight: activeCell.value
+      ? cellsFor(activeCell.value, currentDirection.value).includes(cell)
+      : false,
+    correct: showResults.value && cell.value.toUpperCase() === cell.correct,
+    wrong:
+      showResults.value &&
+      cell.value &&
+      cell.value.toUpperCase() !== cell.correct,
+  };
+}
+
+/* focus helpers using data attributes */
+function focusInput(r: number, c: number) {
+  nextTick(() => {
+    const sel = document.querySelector<HTMLInputElement>(
+      `input[data-r="${r}"][data-c="${c}"]`
+    );
+    sel?.focus();
+    // select text for quick overwrite (if any)
+    if (sel) sel.select();
+  });
+}
+
+/* when input receives focus */
+function onFocus(cell: Cell) {
+  activeCell.value = cell;
+  // choose direction heuristic: prefer across if cell has acrossId, else down
+  if (cell.acrossId && !cell.downId) currentDirection.value = "across";
+  else if (!cell.acrossId && cell.downId) currentDirection.value = "down";
+}
+
+/* clicking cell toggles direction when same cell clicked twice */
+let lastClicked: Cell | null = null;
+function onCellClick(cell: Cell | null) {
+  if (!cell || cell.blocked) return;
+  if (activeCell.value === cell) {
+    // toggle direction
+    currentDirection.value =
+      currentDirection.value === "across" ? "down" : "across";
+  }
+  activeCell.value = cell;
+  lastClicked = cell;
+  // focus input
+  focusInput(cell.r, cell.c);
+}
+
+/* input handler: uppercase + move inside same word */
+function onInput(cell: Cell) {
+  if (!cell) return;
+  cell.value = (cell.value || "").toUpperCase().slice(0, 1);
+  showResults.value = false;
+
+  // move to next in same word (if any)
+  const list = cellsFor(cell, currentDirection.value);
+  const idx = list.indexOf(cell);
+  if (idx >= 0 && idx < list.length - 1) {
+    const next = list[idx + 1];
+    focusInput(next.r, next.c);
+  }
+}
+
+/* find next/prev cell within same word */
+function findNextIn(cell: Cell, dir: "across" | "down") {
+  const list = cellsFor(cell, dir);
+  const idx = list.indexOf(cell);
+  return idx >= 0 ? list[idx + 1] ?? null : null;
+}
+function findPrevIn(cell: Cell, dir: "across" | "down") {
+  const list = cellsFor(cell, dir);
+  const idx = list.indexOf(cell);
+  return idx > 0 ? list[idx - 1] : null;
+}
+
+/* keyboard handling */
+function onKeyDown(e: KeyboardEvent, cell: Cell) {
+  if (!cell) return;
+  const key = e.key;
+
+  if (key === "Backspace") {
+    // if cell has value -> clear; else move to previous cell in word
+    if (cell.value) {
+      cell.value = "";
+    } else {
+      const prev = findPrevIn(cell, currentDirection.value);
+      if (prev) focusInput(prev.r, prev.c);
     }
+    e.preventDefault();
+    return;
   }
-})
 
-function setFocused(r,c){ focused.r=r; focused.c=c }
-function focusCell(r,c){ if(grid[r][c].block) return; focused.r=r; focused.c=c; nextTick(()=>{
-  const el = getInputEl(r,c); el && el.focus()
-}) }
-
-function getInputEl(r,c){ const list = document.querySelectorAll('.board input');
-  for(const el of list){ if(Number(el.dataset.r)===r && Number(el.dataset.c)===c) return el }
-  return null
-}
-
-function onInput(r,c,e){
-  const val = (e.target.value || '').toUpperCase().slice(0,1)
-  grid[r][c].char = val
-  // auto-move to next cell to the right if present
-  moveFocus(r,c,'right')
-}
-
-function moveFocus(r,c,dir){
-  const deltas = {left:[0,-1], right:[0,1], up:[-1,0], down:[1,0]}
-  const [dr,dc] = deltas[dir]
-  let nr=r+dr, nc=c+dc
-  while(nr>=0 && nr<grid.length && nc>=0 && nc<grid[0].length){
-    if(!grid[nr][nc].block){ focusCell(nr,nc); break }
-    nr+=dr; nc+=dc
+  if (key === "ArrowLeft") {
+    currentDirection.value = "across";
+    const prev = findPrevIn(cell, "across");
+    if (prev) focusInput(prev.r, prev.c);
+    e.preventDefault();
+    return;
   }
-}
-
-function onKeydown(e){
-  const r=focused.r, c=focused.c
-  if(e.key==='ArrowRight') moveFocus(r,c,'right')
-  else if(e.key==='ArrowLeft') moveFocus(r,c,'left')
-  else if(e.key==='ArrowUp') moveFocus(r,c,'up')
-  else if(e.key==='ArrowDown') moveFocus(r,c,'down')
-  else if(e.key==='Backspace'){ // clear and move left
-    grid[r][c].char=''
-    moveFocus(r,c,'left')
-    nextTick(()=>getInputEl(...Object.values(focused))?.focus())
+  if (key === "ArrowRight") {
+    currentDirection.value = "across";
+    const next = findNextIn(cell, "across");
+    if (next) focusInput(next.r, next.c);
+    e.preventDefault();
+    return;
   }
-}
-
-function checkAll(){
-  let anyWrong=false
-  for(let r=0;r<grid.length;r++){
-    for(let c=0;c<grid[r].length;c++){
-      const cell = grid[r][c]
-      if(cell.block) continue
-      if(cell.solution){
-        if(cell.char.toUpperCase()===cell.solution.toUpperCase()) cell.state='correct'
-        else { cell.state='wrong'; anyWrong=true }
-      }
-    }
+  if (key === "ArrowUp") {
+    currentDirection.value = "down";
+    const prev = findPrevIn(cell, "down");
+    if (prev) focusInput(prev.r, prev.c);
+    e.preventDefault();
+    return;
   }
-  return !anyWrong
-}
-
-function revealAll(){
-  for(let r=0;r<grid.length;r++){
-    for(let c=0;c<grid[r].length;c++){
-      const cell = grid[r][c]
-      if(!cell.block) cell.char = cell.solution || ''
-    }
+  if (key === "ArrowDown") {
+    currentDirection.value = "down";
+    const next = findNextIn(cell, "down");
+    if (next) focusInput(next.r, next.c);
+    e.preventDefault();
+    return;
   }
+
+  // For other character keys we do nothing here; `onInput` will handle moving forward.
 }
 
-function revealHint(){
-  // reveal first empty or wrong letter
-  for(let r=0;r<grid.length;r++){
-    for(let c=0;c<grid[r].length;c++){
-      const cell = grid[r][c]
-      if(cell.block) continue
-      if(!cell.char || (cell.solution && cell.char.toUpperCase()!==cell.solution.toUpperCase())){
-        cell.char = cell.solution || ''
-        cell.state = 'correct'
-        focusCell(r,c)
-        return
-      }
-    }
-  }
+/* clue selection: focus first cell of clue */
+function selectClue(clue: any, dir: "across" | "down") {
+  selectedClue.value = clue;
+  currentDirection.value = dir;
+  // find first cell with that number (first cell of that word)
+  const start = flat().find((c) =>
+    dir === "across" ? c.acrossId === clue.number : c.downId === clue.number
+  );
+  if (start) focusInput(start.r, start.c);
 }
 
-function resetPuzzle(){
-  for(let r=0;r<grid.length;r++){
-    for(let c=0;c<grid[r].length;c++){
-      const cell = grid[r][c]
-      if(cell.block) continue
-      cell.char=''
-      cell.state=''
-    }
-  }
+/* helpers */
+function flat() {
+  return grid.value.flat();
 }
 
-function selectClue(cl, dir){
-  // focus start cell of clue
-  focusCell(cl.r, cl.c)
+/* check / reset */
+function checkAnswers() {
+  showResults.value = true;
+}
+function resetPuzzle() {
+  flat().forEach((c) => {
+    if (c) c.value = "";
+  });
+  showResults.value = false;
+  activeCell.value = null;
+  selectedClue.value = null;
 }
 
-const unsolvedCount = computed(()=>{
-  let cnt=0
-  for(let r=0;r<grid.length;r++){
-    for(let c=0;c<grid[r].length;c++){
-      const cell = grid[r][c]
-      if(cell.block) continue
-      if(cell.solution && cell.char.toUpperCase()!==cell.solution.toUpperCase()) cnt++
-    }
-  }
-  return cnt
-})
-
+/* wire data-r/data-c attribute in DOM after mount is automatic because inputs are bound with those attributes in template */
 </script>
 
 <style scoped>
-.crossword-wrap{max-width:1100px;margin:1rem auto;font-family:system-ui,Segoe UI,Roboto,Arial}
-.controls{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.buttons button{margin-left:8px;padding:6px 10px;border-radius:6px;border:1px solid #ccc;background:#fff}
-.board{display:inline-block;border:4px solid #222;padding:8px;background:#f4f4f4}
-.row{display:flex}
-.cell{width:36px;height:36px;border:1px solid #999;position:relative;display:flex;align-items:center;justify-content:center;background:#fff}
-.cell.block{background:#222;border-color:#222}
-.cell input{width:100%;height:100%;border:0;text-align:center;font-size:18px;font-weight:600;outline:none;background:transparent}
-.cell .num{position:absolute;top:2px;left:2px;font-size:10px;color:#333}
-.cell.focused{box-shadow:0 0 0 3px rgba(50,120,230,0.12)}
-.cell.wrong input{background:rgba(255,0,0,0.08)}
-.clues{display:flex;gap:24px;margin-top:16px}
-.clue-col{flex:1}
-.clue-col h3{margin:0 0 8px}
-.clue-col ul{list-style:none;padding:0;margin:0}
-.clue-col li{padding:4px 0;cursor:pointer}
-.status{font-weight:600}
+.crossword-wrapper {
+  display: flex;
+  gap: 28px;
+  padding: 20px;
+  justify-content: center;
+  align-items: flex-start;
+  background: #eaf6ff;
+  min-height: 100vh;
+  box-sizing: border-box;
+  height: 1111px;
+}
+
+.crossword-container {
+  position: relative;
+  width: min(760px, 86vw);
+  /* use a fixed ratio so table fits image — adjust ratio to your image shape */
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  background: #fff;
+}
+
+/* background image fills container */
+.background-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 1080px;
+  object-fit: cover;
+  z-index: 1;
+  opacity: 0.98;
+}
+
+/* table overlay fills container exactly */
+.crossword-table {
+  position: absolute;
+  inset: 0;
+  width: 78%;
+  height: 56%;
+  z-index: 2;
+  /* border-spacing: 0.5em; */
+  top: 294px;
+  left: 105px;
+}
+
+/* each cell uses percentage size so it scales responsively */
+.crossword-table td {
+  border: 2px solid #19b2d2e6;
+  /* width: calc(100% / 12); */
+  height: calc(100% / 12);
+  padding: 0;
+  margin: 0;
+  position: relative;
+  vertical-align: middle;
+  text-align: center;
+  background: transparent;
+}
+
+/* blocked cells are black */
+td.blocked {
+  background: transparent;
+  border-color: transparent;
+}
+
+/* input styling */
+.cross-input {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: none;
+  font-size: calc(10px + 1.2vmin);
+  font-weight: 800;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.94);
+  color: #000;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+/* small clue number */
+.cell-number {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: calc(8px + 0.2vmin);
+  color: #222;
+  z-index: 3;
+}
+
+/* active / highlight / correct / wrong styles */
+td.active {
+  border-color: #1e88e5;
+  box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.08) inset;
+}
+td.highlight {
+  box-shadow: inset 0 0 0 3px rgba(200, 230, 255, 0.55);
+}
+td.correct {
+  background: #dff7d8;
+  border-color: #2e7d32;
+}
+td.wrong {
+  background: #ffdada;
+  border-color: #d32f2f;
+}
+
+/* clue panel */
+.clue-panel {
+  width: 320px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(15, 30, 40, 0.06);
+}
+.clue-section {
+  margin-bottom: 12px;
+}
+.clue-section ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+.clue-section li {
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.clue-section li.selected {
+  background: #e6f7ff;
+}
+.buttons {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+}
+button {
+  background: #1976d2;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
 </style>
