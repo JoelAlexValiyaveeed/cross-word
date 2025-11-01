@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import CrossWord from '@/components/crossWord.vue'
+import CrossWord from './components/crossWord.vue';
+
+
 </script>
 
 <template>
