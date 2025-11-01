@@ -72,6 +72,10 @@
         <button @click="resetPuzzle">Reset</button>
       </div>
     </aside> -->
+      <div class="buttons">
+        <button @click="checkAnswers">Check</button>
+        <button @click="resetPuzzle">Reset</button>
+      </div>
   </div>
 </template>
 
@@ -224,11 +228,11 @@ function cellClass(cell: Cell | null) {
     highlight: activeCell.value
       ? cellsFor(activeCell.value, currentDirection.value).includes(cell)
       : false,
-    correct: showResults.value && cell.value.toUpperCase() === cell.correct,
+    correct: showResults.value && cell.value.toUpperCase() === cell.correct && !cell.blocked,
     wrong:
       showResults.value &&
       cell.value &&
-      cell.value.toUpperCase() !== cell.correct,
+      cell.value.toUpperCase() !== cell.correct && !cell.blocked,
   };
 }
 
