@@ -7,6 +7,14 @@
         <button @click="checkAnswers">Check</button>
         <button @click="resetPuzzle">Reset</button>
       </div>
+      <!-- ✅ Popup modal -->
+      <div v-if="showPopup" class="popup-overlay" @click="closePopup">
+        <div class="popup-card" @click.stop>
+          <h2>{{ popupTitle }}</h2>
+          <p>{{ popupMessage }}</p>
+          <button @click="closePopup">OK</button>
+        </div>
+      </div>
       <!-- Table overlay (fills container exactly) -->
       <table class="crossword-table" @mousedown.prevent>
         <tbody>
@@ -38,43 +46,6 @@
         </tbody>
       </table>
     </div>
-
-    <!--    <aside class="clue-panel">
-      <h2>Clues</h2>
-
-      <div class="clue-section">
-        <h3>Across</h3>
-        <ul>
-          <li
-            v-for="clue in clues.across"
-            :key="clue.number"
-            :class="{ selected: selectedClue === clue }"
-            @click="selectClue(clue, 'across')"
-          >
-            {{ clue.number }}. {{ clue.text }}
-          </li>
-        </ul>
-      </div>
-
-      <div class="clue-section">
-        <h3>Down</h3>
-        <ul>
-          <li
-            v-for="clue in clues.down"
-            :key="clue.number"
-            :class="{ selected: selectedClue === clue }"
-            @click="selectClue(clue, 'down')"
-          >
-            {{ clue.number }}. {{ clue.text }}
-          </li>
-        </ul>
-      </div>
-
-      <div class="buttons">
-        <button @click="checkAnswers">Check</button>
-        <button @click="resetPuzzle">Reset</button>
-      </div>
-    </aside> -->
   </div>
 </template>
 
@@ -195,6 +166,9 @@ const currentDirection = ref<"across" | "down">("across");
 const selectedClue = ref<any>(null);
 const showResults = ref(false);
 const containerRef = ref<HTMLElement | null>(null);
+const showPopup = ref(false);
+const popupTitle = ref("");
+const popupMessage = ref("");
 
 /* helpers to flatten / find */
 function flatGrid() {
@@ -369,7 +343,25 @@ function flat() {
 /* check / reset */
 function checkAnswers() {
   showResults.value = true;
+  const allCells = flatGrid().filter((c) => !c.blocked);
+  const allCorrect = allCells.every((c) => c.value.toUpperCase() === c.correct);
+
+  if (allCorrect) {
+    popupTitle.value = "🎉 Congratulations!";
+    popupMessage.value =
+      "A randomised controlled trial (RCT) \
+      uses randomisation to assign participants to groups, applies blindin to reduce bias, includes a placebo for comparison, and provides the highest level of evidence in clinical research.";
+  } else {
+    popupTitle.value = "Almost there!";
+    popupMessage.value = "Some answers are incorrect. Try again!";
+  }
+  showPopup.value = true;
 }
+
+function closePopup() {
+  showPopup.value = false;
+}
+
 function resetPuzzle() {
   flat().forEach((c) => {
     if (c) c.value = "";
@@ -508,6 +500,13 @@ button:active {
   transform: scale(0.96);
 }
 
+.popup-overlay {
+  position: absolute;
+  z-index: 999999;
+  background: #19b2d2e6;
+  padding: 1em;
+}
+
 /* 📱 Responsive */
 @media (max-width: 768px) {
   .crossword-container {
@@ -568,6 +567,10 @@ button:active {
     scale: 0.6;
     top: 22%;
     left: 34%;
+  }
+
+  .popup-overlay {
+    scale: 0.6;
   }
 }
 </style>
