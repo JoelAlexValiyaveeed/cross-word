@@ -392,7 +392,7 @@ function resetPuzzle() {
   justify-content: center;
   align-items: flex-start;
   /** background: #eaf6ff; */
-  min-height: 95vh;
+  /**  min-height: 95vh; */
   box-sizing: border-box;
 }
 
@@ -438,7 +438,7 @@ function resetPuzzle() {
   position: relative;
   text-align: center;
   vertical-align: middle;
-  background: transparent;
+  background: white;
 }
 
 td.blocked {
@@ -448,20 +448,19 @@ td.blocked {
 
 .cross-input {
   width: 84%;
-  height: 100%;
   border: none;
   font-weight: 700;
   text-align: center;
   background: rgba(255, 255, 255, 0.92);
   color: #000;
   outline: none;
-  font-size: clamp(12px, 3vw, 20px);
+  font-size: clamp(12px, 3vw, 1em);
 }
 
 .cell-number {
   position: absolute;
-  top: 2px;
-  left: 4px;
+  top: 0px;
+  left: 1px;
   font-size: clamp(8px, 2.5vw, 12px);
   color: #222;
   z-index: 3;
@@ -470,14 +469,14 @@ td.blocked {
 /* States */
 td.active {
   border-color: #19d2c8eb;
-  box-shadow: 0 0 0 3px rgba(25, 210, 200, 0.2) inset;
+  box-shadow: 0 0 0 1px rgba(25, 210, 200, 0.2) inset;
 }
 td.correct {
-  background: #dff7d8;
+  /** background: #dff7d8; */
   border-color: #2e7d32;
 }
 td.wrong {
-  background: #ffdada;
+  /** background: #ffdada; */
   border-color: #d32f2f;
 }
 
@@ -488,12 +487,16 @@ td.wrong {
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 12px;
+  position: absolute;
+  top: 65%;
+  left: 46%;
+  z-index: 99;
 }
 button {
   background: #1976d2;
   color: white;
   border: none;
-  padding: 10px 18px;
+  padding: 0.5em;
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
@@ -534,20 +537,38 @@ button:active {
     width: 25em;
   }
   .crossword-table {
-    scale: 0.7;
-    top: 23%;
+    scale: 0.75;
+    top: 23.3%;
     height: 47%;
     width: 101%;
-    left: 3%;
+    left: 0%;
+  }
+  .cell-number {
+    scale: 0.6;
+    top: -2%;
+    left: 2%;
   }
   .cross-input {
     font-size: clamp(9px, 5vw, 14px);
+    scale: 0.6;
+    height: 56%;
+    width: 95%;
+  }
+
+  td.active {
+    box-shadow: 0 0 0 1px rgba(25, 210, 200, 0.2) inset;
   }
 
   .background-image {
     width: 108%;
     height: 100%;
     left: -0.6em;
+  }
+
+  .buttons {
+    scale: 0.6;
+    top: 22%;
+    left: 38%;
   }
 }
 </style>
