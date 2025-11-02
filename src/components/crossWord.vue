@@ -3,7 +3,10 @@
     <div class="crossword-container" ref="containerRef">
       <!-- Background image (fills container) -->
       <img src="/cross-word.jpg" class="background-image" alt="crossword bg" />
-
+      <div class="buttons">
+        <button @click="checkAnswers">Check</button>
+        <button @click="resetPuzzle">Reset</button>
+      </div>
       <!-- Table overlay (fills container exactly) -->
       <table class="crossword-table" @mousedown.prevent>
         <tbody>
@@ -72,10 +75,6 @@
         <button @click="resetPuzzle">Reset</button>
       </div>
     </aside> -->
-    <div class="buttons">
-      <button @click="checkAnswers">Check</button>
-      <button @click="resetPuzzle">Reset</button>
-    </div>
   </div>
 </template>
 
@@ -488,8 +487,8 @@ td.wrong {
   flex-wrap: wrap;
   margin-top: 12px;
   position: absolute;
-  top: 65%;
-  left: 46%;
+  top: 24%;
+  left: 42%;
   z-index: 99;
 }
 button {
@@ -568,7 +567,7 @@ button:active {
   .buttons {
     scale: 0.6;
     top: 22%;
-    left: 38%;
+    left: 34%;
   }
 }
 </style>
