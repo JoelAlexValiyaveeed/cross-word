@@ -512,13 +512,56 @@ button:active {
 /* 📱 Responsive */
 @media (max-width: 768px) {
   .crossword-container {
-    width: 95vw;
+    width: 41em;
+    height: 61em;
+  }
+
+  .crossword-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    justify-content: center;
+    align-items: flex-start;
+    box-sizing: border-box;
+    /* width: 25em; */
   }
   .crossword-table {
-    width: 82%;
+    scale: 0.75;
+    top: 24.3%;
+    height: 47%;
+    width: 101%;
+    left: 0%;
+  }
+  .cell-number {
+    scale: 0.6;
+    top: -2%;
+    left: 2%;
   }
   .cross-input {
-    font-size: clamp(10px, 4vw, 16px);
+    font-size: clamp(9px, 5vw, 14px);
+    scale: 0.6;
+    height: 56%;
+    width: 95%;
+  }
+
+  td.active {
+    box-shadow: 0 0 0 1px rgba(25, 210, 200, 0.2) inset;
+  }
+
+  .background-image {
+    width: 108%;
+    height: 100%;
+    left: -0.6em;
+  }
+
+  .buttons {
+    scale: 0.8;
+    top: 24%;
+    left: 40%;
+  }
+
+  .popup-overlay {
+    scale: 0.6;
   }
 }
 
