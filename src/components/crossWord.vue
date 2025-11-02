@@ -72,10 +72,10 @@
         <button @click="resetPuzzle">Reset</button>
       </div>
     </aside> -->
-      <div class="buttons">
-        <button @click="checkAnswers">Check</button>
-        <button @click="resetPuzzle">Reset</button>
-      </div>
+    <div class="buttons">
+      <button @click="checkAnswers">Check</button>
+      <button @click="resetPuzzle">Reset</button>
+    </div>
   </div>
 </template>
 
@@ -94,7 +94,7 @@ type Cell = {
 };
 
 const ROWS = 12;
-const COLS = 15;
+const COLS = 16;
 
 /* initialize grid */
 const grid = ref<Cell[][]>(
@@ -144,7 +144,7 @@ placeWord("CONTROLLED", 1, 7, "down", 2, 2); // 2 Down
 placeWord("RANDOMISATION", 6, 3, "across", 5, 5); // 5 Across (moved a bit for better fit)
 placeWord("EVIDENCE", 9, 0, "across", 7, 7); // 7 Across
 placeWord("BLINDING", 3, 5, "down", 3, 3); // 3 Down (starts under C column)
-placeWord("RCT", 4, 11, "down", 4, 4); // 4 Down
+placeWord("RCT", 4, 12, "down", 4, 4); // 4 Down
 placeWord("BIAS", 8, 2, "down", 6, 6); // 6 Down
 
 /* Clues */
@@ -228,11 +228,15 @@ function cellClass(cell: Cell | null) {
     highlight: activeCell.value
       ? cellsFor(activeCell.value, currentDirection.value).includes(cell)
       : false,
-    correct: showResults.value && cell.value.toUpperCase() === cell.correct && !cell.blocked,
+    correct:
+      showResults.value &&
+      cell.value.toUpperCase() === cell.correct &&
+      !cell.blocked,
     wrong:
       showResults.value &&
       cell.value &&
-      cell.value.toUpperCase() !== cell.correct && !cell.blocked,
+      cell.value.toUpperCase() !== cell.correct &&
+      !cell.blocked,
   };
 }
 
@@ -382,100 +386,91 @@ function resetPuzzle() {
 <style scoped>
 .crossword-wrapper {
   display: flex;
+  flex-wrap: wrap;
   gap: 28px;
-  padding: 20px;
+  padding: 16px;
   justify-content: center;
   align-items: flex-start;
-  background: #eaf6ff;
-  min-height: 100vh;
+  /** background: #eaf6ff; */
+  min-height: 95vh;
   box-sizing: border-box;
-  height: 1111px;
 }
 
 .crossword-container {
   position: relative;
-  width: min(760px, 86vw);
-  /* use a fixed ratio so table fits image — adjust ratio to your image shape */
-  aspect-ratio: 1 / 1;
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  width: min(90vw, 760px);
   background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* background image fills container */
+/* ✅ Full background image visible (no cut-off) */
 .background-image {
-  position: absolute;
-  inset: 0;
   width: 100%;
-  height: 1080px;
-  object-fit: cover;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain; /* show entire image */
+  display: block;
   z-index: 1;
-  opacity: 0.98;
+  position: relative;
 }
 
-/* table overlay fills container exactly */
+/* ✅ Crossword overlay positioned in the center of image */
 .crossword-table {
   position: absolute;
-  inset: 0;
-  width: 78%;
-  height: 56%;
+  top: 30%;
+  left: 15%;
+  /* transform: translate(0, -39%); */
+  /* border-collapse: collapse; */
   z-index: 2;
-  /* border-spacing: 0.5em; */
-  top: 294px;
-  left: 105px;
+  width: 74%;
+  height: 37%;
 }
 
-/* each cell uses percentage size so it scales responsively */
+/* Cell design */
 .crossword-table td {
-  border: 2px solid #19b2d2e6;
-  /* width: calc(100% / 12); */
-  height: calc(100% / 12);
+  border: 1.8px solid #19b2d2e6;
   padding: 0;
-  margin: 0;
   position: relative;
-  vertical-align: middle;
   text-align: center;
+  vertical-align: middle;
   background: transparent;
 }
 
-/* blocked cells are black */
 td.blocked {
   background: transparent;
   border-color: transparent;
 }
 
-/* input styling */
 .cross-input {
-  width: 100%;
+  width: 84%;
   height: 100%;
-  box-sizing: border-box;
   border: none;
-  font-size: calc(10px + 1.2vmin);
-  font-weight: 800;
+  font-weight: 700;
   text-align: center;
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.92);
   color: #000;
   outline: none;
-  -webkit-appearance: none;
+  font-size: clamp(12px, 3vw, 20px);
 }
 
-/* small clue number */
 .cell-number {
   position: absolute;
   top: 2px;
   left: 4px;
-  font-size: calc(8px + 0.2vmin);
+  font-size: clamp(8px, 2.5vw, 12px);
   color: #222;
   z-index: 3;
 }
 
-/* active / highlight / correct / wrong styles */
+/* States */
 td.active {
   border-color: #19d2c8eb;
-  box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.08) inset;
-}
-td.highlight {
-  box-shadow: inset 0 0 0 3px rgba(200, 230, 255, 0.55);
+  box-shadow: 0 0 0 3px rgba(25, 210, 200, 0.2) inset;
 }
 td.correct {
   background: #dff7d8;
@@ -486,41 +481,73 @@ td.wrong {
   border-color: #d32f2f;
 }
 
-/* clue panel */
-.clue-panel {
-  width: 320px;
-  background: #fff;
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 8px 24px rgba(15, 30, 40, 0.06);
-}
-.clue-section {
-  margin-bottom: 12px;
-}
-.clue-section ul {
-  list-style: none;
-  padding-left: 0;
-  margin: 0;
-}
-.clue-section li {
-  padding: 6px 8px;
-  cursor: pointer;
-  border-radius: 6px;
-}
-.clue-section li.selected {
-  background: #e6f7ff;
-}
+/* Buttons */
 .buttons {
-  margin-top: 8px;
   display: flex;
-  gap: 8px;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
 }
 button {
   background: #1976d2;
   color: white;
   border: none;
-  padding: 8px 12px;
+  padding: 10px 18px;
   border-radius: 6px;
   cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s;
+}
+button:hover {
+  background: #125aa1;
+}
+button:active {
+  transform: scale(0.96);
+}
+
+/* 📱 Responsive */
+@media (max-width: 768px) {
+  .crossword-container {
+    width: 95vw;
+  }
+  .crossword-table {
+    width: 82%;
+  }
+  .cross-input {
+    font-size: clamp(10px, 4vw, 16px);
+  }
+}
+
+@media (max-width: 480px) {
+  .crossword-container {
+    width: 25em;
+    height: 35em;
+  }
+  .crossword-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    justify-content: center;
+    align-items: flex-start;
+    box-sizing: border-box;
+    width: 25em;
+  }
+  .crossword-table {
+    scale: 0.7;
+    top: 23%;
+    height: 47%;
+    width: 101%;
+    left: 3%;
+  }
+  .cross-input {
+    font-size: clamp(9px, 5vw, 14px);
+  }
+
+  .background-image {
+    width: 108%;
+    height: 100%;
+    left: -0.6em;
+  }
 }
 </style>
