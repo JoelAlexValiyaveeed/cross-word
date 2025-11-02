@@ -565,9 +565,9 @@ button:active {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 540px) {
   .crossword-container {
-    width: 25em;
+    width: 23em;
     height: 35em;
   }
   .crossword-wrapper {
@@ -577,7 +577,6 @@ button:active {
     justify-content: center;
     align-items: flex-start;
     box-sizing: border-box;
-    width: 25em;
   }
   .crossword-table {
     scale: 0.75;
