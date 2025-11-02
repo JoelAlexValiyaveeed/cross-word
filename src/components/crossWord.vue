@@ -11,7 +11,7 @@
       <div v-if="showPopup" class="popup-overlay" @click="closePopup">
         <div class="popup-card" @click.stop>
           <h2>{{ popupTitle }}</h2>
-          <p>{{ popupMessage }}</p>
+          <p v-html="popupMessage" />
           <button @click="closePopup">OK</button>
         </div>
       </div>
@@ -348,9 +348,11 @@ function checkAnswers() {
 
   if (allCorrect) {
     popupTitle.value = "🎉 Congratulations!";
-    popupMessage.value =
-      "A randomised controlled trial (RCT) \
-      uses randomisation to assign participants to groups, applies blindin to reduce bias, includes a placebo for comparison, and provides the highest level of evidence in clinical research.";
+    popupMessage.value = `A <b>randomised controlled trial (RCT)</b> 
+  uses <b>randomisation</b> to assign participants to groups, 
+  applies <b>blinding</b> to reduce <b>bias</b>, 
+  includes a <b>placebo</b> for comparison, 
+  and provides the highest level of <b>evidence</b> in clinical research.`;
   } else {
     popupTitle.value = "Almost there!";
     popupMessage.value = "Some answers are incorrect. Try again!";
