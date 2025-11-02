@@ -505,6 +505,8 @@ button:active {
   z-index: 999999;
   background: #19b2d2e6;
   padding: 1em;
+  width: 77%;
+  left: 12%;
 }
 
 /* 📱 Responsive */
