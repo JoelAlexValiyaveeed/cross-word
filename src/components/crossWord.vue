@@ -584,10 +584,10 @@ button:active {
   }
   .crossword-table {
     scale: 0.75;
-    top: 23.3%;
+    top: 8em;
     height: 47%;
     width: 101%;
-    left: 0%;
+    left: 0.2em;
   }
   .cell-number {
     scale: 0.6;
