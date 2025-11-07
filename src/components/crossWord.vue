@@ -637,10 +637,10 @@ button:active {
   }
   .crossword-table {
     scale: 0.6;
-    top: 8.4em;
+    top: 6.4em;
     height: 45%;
     width: 116%;
-    left: -0.9em;
+    left: -0.6em;
   }
   .cell-number {
     scale: 0.6;
