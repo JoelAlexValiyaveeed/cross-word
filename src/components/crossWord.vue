@@ -640,7 +640,7 @@ button:active {
     top: 6.4em;
     height: 45%;
     width: 116%;
-    left: -0.6em;
+    left: -1.6em;
   }
   .cell-number {
     scale: 0.6;
@@ -651,7 +651,7 @@ button:active {
     font-size: clamp(9px, 5vw, 14px);
     scale: 0.6;
     height: 56%;
-    width: 65%;
+    width: 50%;
   }
 
   td.active {
