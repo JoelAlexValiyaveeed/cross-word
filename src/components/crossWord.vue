@@ -651,7 +651,7 @@ button:active {
     font-size: clamp(9px, 5vw, 14px);
     scale: 0.6;
     height: 56%;
-    width: 95%;
+    width: 65%;
   }
 
   td.active {
