@@ -387,6 +387,7 @@ function resetPuzzle() {
   /** background: #eaf6ff; */
   /**  min-height: 95vh; */
   box-sizing: border-box;
+  height: 100dvh; /* dynamic viewport height */
 }
 
 .crossword-container {
@@ -415,13 +416,14 @@ function resetPuzzle() {
 /* ✅ Crossword overlay positioned in the center of image */
 .crossword-table {
   position: absolute;
-  top: 30%;
+  top: 28%;
   left: 15%;
   /* transform: translate(0, -39%); */
   /* border-collapse: collapse; */
   z-index: 2;
-  width: 74%;
-  height: 37%;
+  width: 77%;
+  height: 39%;
+  scale: 0.9;
 }
 
 /* Cell design */
